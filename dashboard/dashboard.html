@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Attrition Dashboard — Bouziane Samir</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#f5f4f0;font-family:'Sora',sans-serif;font-weight:300;color:#1a1a18;min-height:100vh}
+
+/* HEADER */
+.db-header{background:#1a1a18;color:#fff;padding:1.5rem 2.5rem;display:flex;align-items:center;justify-content:space-between}
+.db-logo{font-size:.9rem;font-weight:300;opacity:.5;letter-spacing:.05em}
+.db-title h1{font-size:1.1rem;font-weight:500;letter-spacing:-.01em}
+.db-title p{font-size:.72rem;opacity:.45;margin-top:.1rem}
+.db-meta{text-align:right;font-size:.7rem;opacity:.4;line-height:1.7}
+.db-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#1D9E75;margin-right:.4rem;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* FILTERS */
+.filters{background:#fff;border-bottom:1px solid rgba(0,0,0,.07);padding:.875rem 2.5rem;display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap}
+.filter-label{font-size:.7rem;color:#aaa;letter-spacing:.05em;text-transform:uppercase;margin-right:.25rem}
+.filter-btn{font-size:.72rem;font-family:'Sora',sans-serif;padding:.3rem .8rem;border-radius:100px;border:1.5px solid rgba(0,0,0,.12);background:transparent;color:#666;cursor:pointer;transition:all .2s}
+.filter-btn.active{background:#1a1a18;color:#fff;border-color:#1a1a18}
+.filter-sep{width:1px;height:20px;background:rgba(0,0,0,.08)}
+
+/* MAIN */
+.db-main{padding:2rem 2.5rem;max-width:1400px;margin:0 auto}
+
+/* KPI ROW */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:2rem}
+.kpi{background:#fff;border-radius:14px;padding:1.25rem 1.5rem;border:1px solid rgba(0,0,0,.06);transition:transform .2s}
+.kpi:hover{transform:translateY(-2px)}
+.kpi-label{font-size:.65rem;color:#aaa;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.4rem}
+.kpi-val{font-size:2rem;font-weight:600;letter-spacing:-.04em;line-height:1}
+.kpi-sub{font-size:.68rem;color:#bbb;margin-top:.3rem}
+.kpi-alert{border-left:3px solid #E24B4A}
+.kpi-good{border-left:3px solid #1D9E75}
+.kpi-neutral{border-left:3px solid #1a1a18}
+
+/* CHARTS GRID */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;margin-bottom:1.25rem}
+.chart-wide{grid-column:span 2}
+.chart-full{grid-column:span 3}
+
+.chart-card{background:#fff;border-radius:16px;padding:1.5rem;border:1px solid rgba(0,0,0,.06)}
+.chart-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem}
+.chart-hdr-left{}
+.chart-title{font-size:.88rem;font-weight:500;margin-bottom:.2rem}
+.chart-sub{font-size:.7rem;color:#aaa}
+.chart-badge{font-size:.65rem;padding:.2rem .65rem;border-radius:100px;font-weight:500}
+.badge-red{background:#FEE2E2;color:#DC2626}
+.badge-green{background:#DCFCE7;color:#16A34A}
+.badge-neutral{background:#F3F4F6;color:#6B7280}
+
+.chart-wrap{position:relative}
+
+/* INSIGHT BOX */
+.insight-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin-bottom:1.25rem}
+.insight-card{background:#1a1a18;color:#fff;border-radius:16px;padding:1.5rem}
+.insight-n{font-size:2.5rem;font-weight:600;letter-spacing:-.05em;line-height:1;margin-bottom:.3rem}
+.insight-n.green{color:#1D9E75}
+.insight-n.red{color:#E24B4A}
+.insight-label{font-size:.7rem;opacity:.45;letter-spacing:.04em;text-transform:uppercase;margin-bottom:.6rem}
+.insight-desc{font-size:.78rem;opacity:.6;line-height:1.6}
+.insight-action{margin-top:1rem;font-size:.72rem;background:rgba(255,255,255,.07);border-radius:8px;padding:.6rem .875rem;color:rgba(255,255,255,.7);line-height:1.5}
+
+/* FOOTER */
+.db-footer{text-align:center;padding:2rem;font-size:.72rem;color:#bbb}
+.db-footer strong{color:#1a1a18}
+
+/* RESPONSIVE */
+@media(max-width:1100px){.charts-grid{grid-template-columns:1fr 1fr}.chart-wide{grid-column:span 2}.chart-full{grid-column:span 2}}
+@media(max-width:700px){.kpi-row{grid-template-columns:1fr 1fr}.charts-grid{grid-template-columns:1fr}.chart-wide,.chart-full{grid-column:span 1}.insight-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="db-header">
+  <span class="db-logo">BS.</span>
+  <div class="db-title">
+    <h1><span class="db-dot"></span>HR Attrition Analysis Dashboard</h1>
+    <p>IBM HR Analytics · 1 470 employés · Python · SQL · Chart.js</p>
+  </div>
+  <div class="db-meta">
+    Bouziane Samir<br>
+    Data Analyst & BI Developer<br>
+    2025
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filters">
+  <span class="filter-label">Département</span>
+  <button class="filter-btn active" onclick="setFilter('dept','all',this)">Tous</button>
+  <button class="filter-btn" onclick="setFilter('dept','Sales',this)">Sales</button>
+  <button class="filter-btn" onclick="setFilter('dept','R&D',this)">R&D</button>
+  <button class="filter-btn" onclick="setFilter('dept','HR',this)">HR</button>
+  <div class="filter-sep"></div>
+  <span class="filter-label">Overtime</span>
+  <button class="filter-btn active" onclick="setFilter('ot','all',this)" data-group="ot">Tous</button>
+  <button class="filter-btn" onclick="setFilter('ot','Yes',this)" data-group="ot">Oui</button>
+  <button class="filter-btn" onclick="setFilter('ot','No',this)" data-group="ot">Non</button>
+</div>
+
+<!-- MAIN -->
+<div class="db-main">
+
+  <!-- KPI ROW -->
+  <div class="kpi-row">
+    <div class="kpi kpi-alert">
+      <div class="kpi-label">Taux d'attrition</div>
+      <div class="kpi-val" id="kpi-rate">16.4%</div>
+      <div class="kpi-sub">241 départs / 1 470 employés</div>
+    </div>
+    <div class="kpi kpi-neutral">
+      <div class="kpi-label">Effectif total</div>
+      <div class="kpi-val" id="kpi-total">1 470</div>
+      <div class="kpi-sub">3 départements</div>
+    </div>
+    <div class="kpi kpi-alert">
+      <div class="kpi-label">Départs / an</div>
+      <div class="kpi-val" id="kpi-left">241</div>
+      <div class="kpi-sub">coût estimé $2.2M–$4.5M</div>
+    </div>
+    <div class="kpi kpi-neutral">
+      <div class="kpi-label">Salaire médian</div>
+      <div class="kpi-val">$10.5K</div>
+      <div class="kpi-sub">mensuel</div>
+    </div>
+    <div class="kpi kpi-good">
+      <div class="kpi-label">Ancienneté moy.</div>
+      <div class="kpi-val">19.7</div>
+      <div class="kpi-sub">années</div>
+    </div>
+  </div>
+
+  <!-- INSIGHT CARDS -->
+  <div class="insight-row">
+    <div class="insight-card">
+      <div class="insight-label">Impact Overtime</div>
+      <div class="insight-n red">×2.0</div>
+      <div class="insight-desc">Les employés en heures supplémentaires ont 2× plus de risque de quitter l'entreprise (25.6% vs 13.0%).</div>
+      <div class="insight-action">→ Plafonner les heures sup, compenser financièrement</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-label">Bas salaires à risque</div>
+      <div class="insight-n red">27.7%</div>
+      <div class="insight-desc">Les employés gagnant moins de $3K/mois représentent le groupe le plus à risque — soit 2× la moyenne.</div>
+      <div class="insight-action">→ Revalorisation ciblée des < $3K/mois</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-label">Économies potentielles</div>
+      <div class="insight-n green">$880K</div>
+      <div class="insight-desc">Réduire l'attrition de 16% → 10% = 88 départs évités/an à $10K–$25K le départ.</div>
+      <div class="insight-action">→ ROI positif dès la 1re année d'actions RH</div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="charts-grid">
+
+    <div class="chart-card chart-wide">
+      <div class="chart-hdr">
+        <div class="chart-hdr-left">
+          <div class="chart-title">Attrition par département</div>
+          <div class="chart-sub">Taux de départ en % par département</div>
+        </div>
+        <span class="chart-badge badge-red">Sales : 17.7%</span>
+      </div>
+      <div class="chart-wrap"><canvas id="chartDept" height="160"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div class="chart-hdr-left">
+          <div class="chart-title">Impact Overtime</div>
+          <div class="chart-sub">Taux d'attrition selon les heures sup</div>
+        </div>
+        <span class="chart-badge badge-red">+12.6 pts</span>
+      </div>
+      <div class="chart-wrap"><canvas id="chartOT" height="160"></canvas></div>
+    </div>
+
+    <div class="chart-card chart-wide">
+      <div class="chart-hdr">
+        <div class="chart-hdr-left">
+          <div class="chart-title">Attrition par tranche salariale</div>
+          <div class="chart-sub">Plus le salaire est bas, plus le risque est élevé</div>
+        </div>
+        <span class="chart-badge badge-red">< $3K → 27.7%</span>
+      </div>
+      <div class="chart-wrap"><canvas id="chartSalary" height="140"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div class="chart-hdr-left">
+          <div class="chart-title">Tranche d'âge</div>
+          <div class="chart-sub">Taux d'attrition par âge</div>
+        </div>
+        <span class="chart-badge badge-neutral">36-45 : 18%</span>
+      </div>
+      <div class="chart-wrap"><canvas id="chartAge" height="160"></canvas></div>
+    </div>
+
+    <div class="chart-card chart-wide">
+      <div class="chart-hdr">
+        <div class="chart-hdr-left">
+          <div class="chart-title">Fenêtre d'ancienneté critique</div>
+          <div class="chart-sub">Le taux de départ est le plus élevé dans les premières années</div>
+        </div>
+        <span class="chart-badge badge-red">< 1 an : 30.3%</span>
+      </div>
+      <div class="chart-wrap"><canvas id="chartTenure" height="140"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div class="chart-hdr-left">
+          <div class="chart-title">Score satisfaction</div>
+          <div class="chart-sub">Corrélation satisfaction ↔ rétention</div>
+        </div>
+        <span class="chart-badge badge-green">Élevé → 8.4%</span>
+      </div>
+      <div class="chart-wrap"><canvas id="chartSat" height="160"></canvas></div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="db-footer">
+  Dashboard construit avec <strong>Python · Pandas · Chart.js</strong> —
+  <strong>Bouziane Samir</strong>, Data Analyst & BI Developer ·
+  <a href="https://github.com/samir-data-cloud/hr-attrition-analysis" style="color:#1D9E75">GitHub</a>
+</div>
+
+<script>
+const GREEN = '#1D9E75';
+const RED   = '#E24B4A';
+const DARK  = '#1a1a18';
+const GRAY  = '#e5e5e3';
+const LIGHT = '#f5f4f0';
+
+Chart.defaults.font.family = "'Sora', sans-serif";
+Chart.defaults.font.size   = 11;
+Chart.defaults.color       = '#999';
+
+function makeBar(id, labels, data, colors, opts = {}) {
+  return new Chart(document.getElementById(id), {
+    type: 'bar',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 6, borderSkipped: false }] },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: { label: ctx => ` ${ctx.parsed.y}%` }
+      }},
+      scales: {
+        x: { grid: { display: false }, border: { display: false } },
+        y: { grid: { color: 'rgba(0,0,0,.05)' }, border: { display: false }, ticks: { callback: v => v + '%' }, ...opts.y }
+      }
+    }
+  });
+}
+
+// 1. Département
+makeBar('chartDept',
+  ['Sales (457)', 'R&D (863)', 'Human Resources (150)'],
+  [17.7, 16.5, 12.0],
+  [RED, '#F87171', GREEN]
+);
+
+// 2. Overtime (doughnut)
+new Chart(document.getElementById('chartOT'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Overtime Oui (25.6%)', 'Overtime Non (13.0%)'],
+    datasets: [{ data: [25.6, 13.0], backgroundColor: [RED, GREEN], borderWidth: 0, hoverOffset: 6 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true, cutout: '68%',
+    plugins: {
+      legend: { position: 'bottom', labels: { padding: 14, boxWidth: 10, font: { size: 11 } } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.label}` } }
+    }
+  }
+});
+
+// 3. Salaire
+makeBar('chartSalary',
+  ['< $3K', '$3K–6K', '$6K–10K', '> $10K'],
+  [27.7, 13.1, 17.7, 14.6],
+  [RED, GREEN, '#FBBF24', '#60A5FA'],
+  { y: { max: 35 } }
+);
+
+// 4. Âge
+makeBar('chartAge',
+  ['36-45', '26-35', '18-25', '46-60'],
+  [18.0, 16.7, 16.5, 15.0],
+  ['#F87171', '#FBBF24', '#FBBF24', GREEN]
+);
+
+// 5. Ancienneté (line)
+new Chart(document.getElementById('chartTenure'), {
+  type: 'line',
+  data: {
+    labels: ['< 1 an', '1-3 ans', '3-5 ans', '5-10 ans', '> 10 ans'],
+    datasets: [{
+      data: [30.3, 15.7, 19.2, 25.0, 13.9],
+      borderColor: RED, backgroundColor: 'rgba(226,75,74,.1)',
+      tension: 0.4, fill: true, pointBackgroundColor: RED,
+      pointRadius: 5, pointHoverRadius: 7, borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true,
+    plugins: { legend: { display: false }, tooltip: {
+      callbacks: { label: ctx => ` ${ctx.parsed.y}%` }
+    }},
+    scales: {
+      x: { grid: { display: false }, border: { display: false } },
+      y: { grid: { color: 'rgba(0,0,0,.05)' }, border: { display: false }, ticks: { callback: v => v + '%' } }
+    }
+  }
+});
+
+// 6. Satisfaction
+makeBar('chartSat',
+  ['Très faible', 'Faible', 'Moyen', 'Élevé'],
+  [31.2, 17.7, 13.6, 8.4],
+  [RED, '#F87171', '#FBBF24', GREEN]
+);
+
+// FILTERS (cosmetic — met en évidence la sélection)
+function setFilter(group, val, btn) {
+  document.querySelectorAll(`.filter-btn[onclick*="'${group}'"]`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
